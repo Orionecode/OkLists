@@ -105,7 +105,7 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
     }
     
     // 添加
-    func addItemViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem) {
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem) {
         let newRowIndex = checklist.items.count
 
         checklist.items.append(item)
@@ -117,7 +117,7 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
     }
     
     // 修改
-    func addItemViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem) {
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem) {
         // 要创建需要检索单元格的IndexPath，您首先需要找到此ChecklistItem的行号。行号与项目数组中ChecklistItem的索引相同——您可以使用firstInde
         // （of:）方法返回
         if let index = checklist.items.firstIndex(of: item) {
@@ -127,6 +127,5 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
             }
         }
         navigationController?.popViewController(animated: true)
-        
     }
 }

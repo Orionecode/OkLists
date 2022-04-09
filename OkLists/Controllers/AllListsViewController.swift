@@ -7,94 +7,138 @@
 
 import UIKit
 
-class AllListsViewController: UITableViewController, ListViewControllerDelegate {
+class AllListsViewController: UITableViewController, ListViewControllerDelegate, UINavigationControllerDelegate {
     var dataModel: DataModel!
 
     let cellIdentifier = "ChecklistCell"
-
+    
+    // viewDidAppear()在视图在屏幕上可见且动画完成后被调用。由于动画的发生，它们之间可能有半秒左右的差异。
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        navigationController?.delegate = self
+        let index = dataModel.indexSelectedChecklist
+        if (index >= 0 && index < dataModel.lists.count
+        ) {
+            let checklist = dataModel.lists[index]
+            performSegue(withIdentifier: "ShowChecklist", sender: checklist)
+        }
+    }
+    
+    // viewDidLoad一般不会被二次调用，这里显示的是出于某种原因需要视图必须做一次的事情。
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationController?.navigationBar.prefersLargeTitles = true
-
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellIdentifier)
     }
+    
+    // viewWillAppear()在viewDidAppear()之前，viewDidLoad之后被调用，当视图即将变得可见但动画还没有开始时。
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        // 刷新tableView
+        tableView.reloadData()
+    }
+    
 
-    // MARK: - Table view data source
+    // MARK: - Table view 相关设置
 
+    // 配置要渲染的table
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
         return dataModel.lists.count
     }
 
+    // 配置cell
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier, for: indexPath)
-
+        let cell: UITableViewCell!
+        // 显示空cell或者有subtitle的cell
+        if let tmp = tableView.dequeueReusableCell(withIdentifier: cellIdentifier){
+            cell = tmp
+        } else {
+            cell = UITableViewCell(style: .subtitle, reuseIdentifier: cellIdentifier)
+        }
+        
         // Configure the cell...
         let checklist = dataModel.lists[indexPath.row]
+        let count = checklist.countUncheckedItems()
+        let iconImage = cell.imageView!
+        
         cell.textLabel!.text = checklist.name
-        cell.accessoryType = .disclosureIndicator
-
+        cell.accessoryType = .detailDisclosureButton
+        
+        if (checklist.items.count == 0) {
+            cell.detailTextLabel!.text = "No items"
+        } else {
+            cell.detailTextLabel!.text = (count == 0 ? "All Done" : "\(count) Remaining")
+        }
+        iconImage.image = UIImage(systemName: checklist.icon)
+        
         return cell
     }
-    
+
     // 添加删除功能
     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         // 从data model中移除项目
         dataModel.lists.remove(at: indexPath.row)
         //从表视图中删除相应的行
         tableView.deleteRows(at: [indexPath], with: .automatic)
-        
     }
-    
+
+    // 添加修改功能
     override func tableView(
-      _ tableView: UITableView,
-      accessoryButtonTappedForRowWith indexPath: IndexPath
+        _ tableView: UITableView,
+        accessoryButtonTappedForRowWith indexPath: IndexPath
     ) {
-      let controller = storyboard!.instantiateViewController(
-        withIdentifier: "ListDetailViewController") as! ListDetailViewController
-      controller.delegate = self
+        let controller = storyboard!.instantiateViewController(
+            withIdentifier: "ListDetailViewController") as! ListDetailViewController
+        controller.delegate = self
 
-      let checklist = dataModel.lists[indexPath.row]
-      controller.checkListToEdit = checklist
+        let checklist = dataModel.lists[indexPath.row]
+        controller.checkListToEdit = checklist
 
-      navigationController?.pushViewController(
-        controller,
-        animated: true)
+        navigationController?.pushViewController(
+            controller,
+            animated: true)
     }
 
-    // 导航到Checklist
+    // 点击导航到Checklist
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // 保持上次进入的状态
+        dataModel.indexSelectedChecklist = indexPath.row
         let checklist = dataModel.lists[indexPath.row]
         performSegue(withIdentifier: "ShowChecklist", sender: checklist)
     }
-    
-    
-    // MARK: - Delegate
+
+
+    // MARK: - listDetailView Delegate
     func listDetailViewControllerDidCancel(_ controller: ListDetailViewController) {
         navigationController?.popViewController(animated: true)
     }
 
     func listDetailViewController(_ controller: ListDetailViewController, didFinishAdding checklist: Checklist) {
-        let newRowIndex = dataModel.lists.count
         dataModel.lists.append(checklist)
-
-        let indexPath = IndexPath(row: newRowIndex, section: 0)
-        let indexPaths = [indexPath]
-        tableView.insertRows(at: indexPaths, with: .automatic)
+        dataModel.sortChecklists()
+        tableView.reloadData()
 
         navigationController?.popViewController(animated: true)
     }
 
     func listDetailViewController(_ controller: ListDetailViewController, didFinishEditing checklist: Checklist) {
-        if let index = dataModel.lists.firstIndex(of: checklist) {
-            let indexPath = IndexPath(row: index, section: 0)
-            if let cell = tableView.cellForRow(at: indexPath) {
-                cell.textLabel!.text = checklist.name
-            }
-        }
+        dataModel.sortChecklists()
+        tableView.reloadData()
+        
         navigationController?.popViewController(animated: true)
     }
 
+    // MARK: - Navigation Controller Delegates
+    func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
+        // 是否按下按钮
+        if (viewController === self) {
+            // "如果你使用==，你在检查两个变量是否有相同的值。用===，你是在检查两个变量是否指向完全相同的对象。"
+            dataModel.indexSelectedChecklist = -1
+        }
+    }
+    
     // MARK: - Prepare
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if (segue.identifier == "ShowChecklist") {
