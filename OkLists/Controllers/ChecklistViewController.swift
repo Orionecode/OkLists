@@ -45,7 +45,6 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         checklist.items.remove(at: indexPath.row)
         //从表视图中删除相应的行
         tableView.deleteRows(at: [indexPath], with: .automatic)
-        
     }
 
     // 设定选中点击效果，并且使点击效果生效
