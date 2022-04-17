@@ -47,8 +47,8 @@ class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
         }
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         // 使得键盘称为第一焦点
         textField.becomeFirstResponder()
     }
