@@ -7,7 +7,53 @@
 
 import UIKit
 
-class ChecklistViewController: UITableViewController, ItemDetailViewControllerDelegate {
+// MARK: - ChecklistViewController必须接受来自ItemDetailViewControllerDelegate中的命令，相当于 itern
+extension ChecklistViewController: ItemDetailViewControllerDelegate {
+    // 取消
+    func addItemViewControllerDidCancel(_ controller: ItemDetailViewController) {
+    }
+
+    // 添加
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem) {
+        let newRowIndex = checklist.items.count
+
+        checklist.items.append(item)
+
+        let indexPath = IndexPath(row: newRowIndex, section: 0)
+        tableView.insertRows(at: [indexPath], with: .automatic)
+    }
+
+    // 修改
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem) {
+        // 要创建需要检索单元格的IndexPath，您首先需要找到此ChecklistItem的行号。行号与项目数组中ChecklistItem的索引相同——您可以使用firstInde
+        // （of:）方法返回
+        if let index = checklist.items.firstIndex(of: item) {
+            let indexPath = IndexPath(row: index, section: 0)
+            if let cell = tableView.cellForRow(at: indexPath) {
+                configureText(for: cell, with: item)
+            }
+        }
+    }
+    
+    // MARK: - Navigation
+    // In a storyboard-based application, you will often want to do a little preparation before navigation
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        // 由于每个View Controller可能会有多个segue，因此给定该segue一个唯一的标识符
+        if (segue.identifier == "AddItem") {
+            let controller = segue.destination as! ItemDetailViewController
+            controller.itemDetailViewDelegate = self
+        } else if (segue.identifier == "EditItem") {
+            let controller = segue.destination as! ItemDetailViewController
+            controller.itemDetailViewDelegate = self
+            if let indexPath = tableView.indexPath(for: sender as! UITableViewCell) {
+                controller.itemToEdit = checklist.items[indexPath.row]
+            }
+        }
+    }
+}
+
+// MARK: - UITableViewController
+class ChecklistViewController: UITableViewController {
     var checklist: Checklist!
 
     override func viewDidLoad() {
@@ -17,7 +63,7 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
     }
 
     // MARK: - 界面样式，渲染行数
-    
+
     // 生成Table View，确定渲染行数
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
@@ -64,7 +110,7 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         with item: ChecklistItem
     ) {
         let label = cell.viewWithTag(1001) as! UILabel
-        
+
         if (item.checked) {
             label.text = "✔︎"
         } else {
@@ -78,53 +124,5 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         with item: ChecklistItem) {
         let label = cell.viewWithTag(1000) as! UILabel
         label.text = item.text
-    }
-    
-    // MARK: - Navigation
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // 由于每个View Controller可能会有多个segue，因此给定该segue一个唯一的标识符
-        if (segue.identifier == "AddItem") {
-            let controller = segue.destination as! ItemDetailViewController
-            controller.delegate = self
-        } else if (segue.identifier == "EditItem") {
-            let controller = segue.destination as! ItemDetailViewController
-            controller.delegate = self
-            if let indexPath = tableView.indexPath(for: sender as! UITableViewCell) {
-                controller.itemToEdit = checklist.items[indexPath.row]
-            }
-        }
-    }
-    
-    // MARK: - 因为属于AddItemViewControllerDelegate对象，必须实现delegate中的所有方法
-    
-    // 取消
-    func addItemViewControllerDidCancel(_ controller: ItemDetailViewController) {
-        navigationController?.popViewController(animated: true)
-    }
-    
-    // 添加
-    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem) {
-        let newRowIndex = checklist.items.count
-
-        checklist.items.append(item)
-
-        let indexPath = IndexPath(row: newRowIndex, section: 0)
-        tableView.insertRows(at: [indexPath], with: .automatic)
-        navigationController?.popViewController(animated: true)
-        
-    }
-    
-    // 修改
-    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem) {
-        // 要创建需要检索单元格的IndexPath，您首先需要找到此ChecklistItem的行号。行号与项目数组中ChecklistItem的索引相同——您可以使用firstInde
-        // （of:）方法返回
-        if let index = checklist.items.firstIndex(of: item) {
-            let indexPath = IndexPath(row: index, section: 0)
-            if let cell = tableView.cellForRow(at: indexPath) {
-                configureText(for: cell, with: item)
-            }
-        }
-        navigationController?.popViewController(animated: true)
     }
 }

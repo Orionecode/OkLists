@@ -7,7 +7,36 @@
 
 import UIKit
 
-class AllListsViewController: UITableViewController, ListViewControllerDelegate, UINavigationControllerDelegate {
+// MARK: - AllListsViewController必须接受来自ListViewControllerDetailDelegate中的命令，相当于 itern
+extension AllListsViewController: ListViewControllerDetailDelegate {
+    func listDetailViewControllerDidCancel(_ controller: ListDetailViewController) {
+    }
+
+    func listDetailViewController(_ controller: ListDetailViewController, didFinishAdding checklist: Checklist) {
+        dataModel.lists.append(checklist)
+        dataModel.sortChecklists()
+        tableView.reloadData()
+    }
+
+    func listDetailViewController(_ controller: ListDetailViewController, didFinishEditing checklist: Checklist) {
+        dataModel.sortChecklists()
+        tableView.reloadData()
+    }
+    
+    // MARK: - Prepare
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if (segue.identifier == "ShowChecklist") {
+            let controller = segue.destination as! ChecklistViewController
+            controller.checklist = sender as? Checklist
+        } else if segue.identifier == "AddChecklist" {
+            let controller = segue.destination as! ListDetailViewController
+            controller.delegate = self
+        }
+    }
+}
+
+// MARK: - UITableViewController, UINavigationControllerDelegate
+class AllListsViewController: UITableViewController, UINavigationControllerDelegate {
     var dataModel: DataModel!
 
     let cellIdentifier = "ChecklistCell"
@@ -109,44 +138,12 @@ class AllListsViewController: UITableViewController, ListViewControllerDelegate,
         performSegue(withIdentifier: "ShowChecklist", sender: checklist)
     }
 
-
-    // MARK: - listDetailView Delegate
-    func listDetailViewControllerDidCancel(_ controller: ListDetailViewController) {
-        navigationController?.popViewController(animated: true)
-    }
-
-    func listDetailViewController(_ controller: ListDetailViewController, didFinishAdding checklist: Checklist) {
-        dataModel.lists.append(checklist)
-        dataModel.sortChecklists()
-        tableView.reloadData()
-
-        navigationController?.popViewController(animated: true)
-    }
-
-    func listDetailViewController(_ controller: ListDetailViewController, didFinishEditing checklist: Checklist) {
-        dataModel.sortChecklists()
-        tableView.reloadData()
-        
-        navigationController?.popViewController(animated: true)
-    }
-
     // MARK: - Navigation Controller Delegates
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
         // 是否按下按钮
         if (viewController === self) {
             // "如果你使用==，你在检查两个变量是否有相同的值。用===，你是在检查两个变量是否指向完全相同的对象。"
             dataModel.indexSelectedChecklist = -1
-        }
-    }
-    
-    // MARK: - Prepare
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if (segue.identifier == "ShowChecklist") {
-            let controller = segue.destination as! ChecklistViewController
-            controller.checklist = sender as? Checklist
-        } else if segue.identifier == "AddChecklist" {
-            let controller = segue.destination as! ListDetailViewController
-            controller.delegate = self
         }
     }
 }

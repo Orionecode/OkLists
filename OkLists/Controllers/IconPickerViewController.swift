@@ -7,8 +7,10 @@
 
 import UIKit
 
+// MARK: - 制定规则
 protocol IconPickerViewControllerDelegate: AnyObject {
-    func iconPicker(
+    // 是否选择了Icon
+    func didPickedIcon(
         _ picker: IconPickerViewController,
         didPick iconName: String)
 }
@@ -17,7 +19,7 @@ class IconPickerViewController: UITableViewController {
     let icons = ["globe.asia.australia", "bolt.fill", "pencil", "wand.and.rays", "list.number", "alarm", "photo", "plus.rectangle.on.folder.fill"]
     let iconsName = ["Global", "Lightning", "Pencil", "Rays", "List", "Alarm", "Photo", "Folder"]
     
-    weak var delegate: IconPickerViewControllerDelegate?
+    weak var iconPickerDelegate: IconPickerViewControllerDelegate?
     
     // MARK: - Table View Delegates
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -33,9 +35,12 @@ class IconPickerViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let delegate = delegate {
+        // 每次点击的时候设置Delegate
+        if let iconPickerDelegate = iconPickerDelegate {
             let iconName = icons[indexPath.row]
-            delegate.iconPicker(self, didPick: iconName)
+            // iconPickerDelegate 已经被设置为所选中的项目
+            iconPickerDelegate.didPickedIcon(self, didPick: iconName)
+            navigationController?.popViewController(animated: true)
         }
     }
 }

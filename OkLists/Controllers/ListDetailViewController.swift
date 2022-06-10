@@ -7,27 +7,30 @@
 
 import UIKit
 
-protocol ListViewControllerDelegate: AnyObject {
+// MARK: - ListDetailViewController对当前页面的状态更改有控制权，相当于Boss，制定protocol规则
+protocol ListViewControllerDetailDelegate: AnyObject {
+    // 取消
     func listDetailViewControllerDidCancel(
         _ controller: ListDetailViewController)
-
+    // 完成添加
     func listDetailViewController(
         _ controller: ListDetailViewController,
         didFinishAdding checklist: Checklist
     )
-
+    // 修改项目
     func listDetailViewController(
         _ controller: ListDetailViewController,
         didFinishEditing checklist: Checklist
     )
 }
 
-class ListDetailViewController: UITableViewController, UITextFieldDelegate, IconPickerViewControllerDelegate {
+// MARK: - UITableViewController
+class ListDetailViewController: UITableViewController, UITextFieldDelegate {
     @IBOutlet weak var textField: UITextField!
     @IBOutlet weak var doneBarButton: UIBarButtonItem!
     @IBOutlet weak var iconImage: UIImageView!
-    
-    weak var delegate: ListViewControllerDelegate?
+
+    weak var delegate: ListViewControllerDetailDelegate?
 
     var checkListToEdit: Checklist?
     var iconName = "alarm"
@@ -39,12 +42,12 @@ class ListDetailViewController: UITableViewController, UITextFieldDelegate, Icon
             title = "Edit CheckList"
             textField.text = checklist.name
             doneBarButton.isEnabled = true
-            
+
             iconName = checklist.icon
         }
         iconImage.image = UIImage(systemName: iconName)
     }
-    
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         // 使得键盘称为第一焦点
@@ -55,6 +58,7 @@ class ListDetailViewController: UITableViewController, UITextFieldDelegate, Icon
     @IBAction func cancel(_ sender: Any) {
         // 用户点击取消时候，我将发送addItemViewControllerDidCancel消息发送回delegate
         delegate?.listDetailViewControllerDidCancel(self)
+        navigationController?.popViewController(animated: true)
     }
 
     // 这里使用Connection Inspector sent Events 来确保点击键盘上的return也可以保存输入
@@ -64,12 +68,14 @@ class ListDetailViewController: UITableViewController, UITextFieldDelegate, Icon
             checklist.name = textField.text!
             checklist.icon = iconName
             delegate?.listDetailViewController(self, didFinishEditing: checklist)
+            navigationController?.popViewController(animated: true)
         }
         // 用户在创建新的对象
             else {
             // 用户点击完成按钮时候，我将传递一个新的ChecklistItem对象，并且该对象具有text
             let checklist = Checklist(name: textField.text!, icon: iconName)
             delegate?.listDetailViewController(self, didFinishAdding: checklist)
+            navigationController?.popViewController(animated: true)
         }
     }
     // MARK: - Table View Delegates
@@ -99,22 +105,24 @@ class ListDetailViewController: UITableViewController, UITextFieldDelegate, Icon
         doneBarButton.isEnabled = false
         return true
     }
-    
-    // MARK: - Delegate
-    func iconPicker(_ picker: IconPickerViewController, didPick iconName: String) {
+}
+
+extension ListDetailViewController: IconPickerViewControllerDelegate {
+    // MARK: - 接受IconPickerViewControllerDelegate，自动调用
+    func didPickedIcon(_ picker: IconPickerViewController, didPick iconName: String) {
+        //执行来自IconPickerView的命令
         self.iconName = iconName
         iconImage.image = UIImage(systemName: iconName)
-        navigationController?.popViewController(animated: true)
     }
     
-    // MARK: - Navigation
+    // MARK: - SB Segue Navigation Link to IconPickerView
     override func prepare(
-      for segue: UIStoryboardSegue,
-      sender: Any?
+        for segue: UIStoryboardSegue,
+        sender: Any?
     ) {
-      if segue.identifier == "PickIcon" {
-        let controller = segue.destination as! IconPickerViewController
-        controller.delegate = self
-      }
+        if segue.identifier == "PickIcon" {
+            let controller = segue.destination as! IconPickerViewController
+            controller.iconPickerDelegate = self
+        }
     }
 }
